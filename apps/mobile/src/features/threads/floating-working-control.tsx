@@ -19,7 +19,11 @@ import { ControlPill } from "../../components/ControlPill";
 import { NATIVE_LIQUID_GLASS_SUPPORTED } from "../../native/native-glass";
 
 const CONTROL_HEIGHT = 44;
-const CONTROL_COMPOSER_GAP = 8;
+// The composer bar pads its own top by 6, so the pill sits 8 below the last
+// timeline row and 8 above the composer pill; the coverage below reserves
+// the same 8 above it in the list's end inset.
+const CONTROL_COMPOSER_GAP = 2;
+const CONTROL_FEED_GAP = 8;
 const GLASS_MERGE_SPACING = 12;
 const CONTROL_ENTERING = FadeIn.duration(180).reduceMotion(ReduceMotion.System);
 const CONTROL_EXITING = FadeOut.duration(120).reduceMotion(ReduceMotion.System);
@@ -40,7 +44,8 @@ const UniwindGlassContainer = withUniwind(GlassContainer, {
 });
 const AnimatedGlassView = Animated.createAnimatedComponent(UniwindGlassView);
 
-export const FLOATING_WORKING_CONTROL_COVERAGE = CONTROL_HEIGHT + CONTROL_COMPOSER_GAP;
+export const FLOATING_WORKING_CONTROL_COVERAGE =
+  CONTROL_HEIGHT + CONTROL_COMPOSER_GAP + CONTROL_FEED_GAP;
 
 /**
  * What the floating pill says. Syncing and working share one element so the
@@ -81,7 +86,7 @@ export function FloatingWorkingControl(props: {
     <Animated.View
       pointerEvents="box-none"
       className="absolute left-0 right-0 z-20 items-center"
-      style={{ top: -FLOATING_WORKING_CONTROL_COVERAGE }}
+      style={{ top: -(CONTROL_HEIGHT + CONTROL_COMPOSER_GAP) }}
       entering={NATIVE_LIQUID_GLASS_SUPPORTED ? undefined : CONTROL_ENTERING}
       exiting={NATIVE_LIQUID_GLASS_SUPPORTED ? undefined : CONTROL_EXITING}
     >
