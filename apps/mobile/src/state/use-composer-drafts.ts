@@ -290,7 +290,9 @@ async function writePersistedComposerState(
     const file = await getComposerDraftsFile();
     operation = "encode";
     const nonEmptyDrafts = Object.fromEntries(
-      Object.entries(drafts).filter(([, draft]) => !isEmptyDraft(draft)),
+      Object.entries(drafts).filter(
+        ([, draft]) => !isEmptyDraft(draft) || (draft.importedShareIds?.length ?? 0) > 0,
+      ),
     );
     const document = {
       schemaVersion: COMPOSER_DRAFTS_SCHEMA_VERSION,

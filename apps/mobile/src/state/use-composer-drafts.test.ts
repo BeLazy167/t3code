@@ -167,6 +167,7 @@ import {
   type ComposerDraft,
   flushComposerDrafts,
   getComposerDraftSnapshot,
+  mergeComposerDraftContent,
   mergeComposerDraftContentState,
   releaseUnusedComposerAttachmentFiles,
   removeComposerDraftsForEnvironment,
@@ -1352,24 +1353,31 @@ describe("mobile composer drafts", () => {
     });
   });
 
-  it("keeps a share-import receipt when releasing a sent model choice", () => {
+  it("persists a share-import receipt when releasing a sent model choice", async () => {
     const draftKey = "environment-1:thread-1";
-    const model = { instanceId: ProviderInstanceId.make("codex"), model: "gpt-5.4" };
+    const model = { instanceId: ProviderInstanceId.make("codex"), model: "ModelA" };
+    const share = { text: "Shared text", attachments: [], sourceShareId: "share-1" };
+    await waitForComposerDraftsLoaded();
+    await mergeComposerDraftContent(draftKey, share);
     updateComposerDraftSettings(draftKey, { modelSelection: model });
     const sentId = getComposerDraftSnapshot(draftKey).modelSelectionId;
     if (sentId === undefined) throw new Error("choice has no id");
-    appAtomRegistry.set(composerDraftsAtom, {
-      [draftKey]: { ...getComposerDraftSnapshot(draftKey), importedShareIds: ["share-1"] },
-    });
-
+    setComposerDraftText(draftKey, "");
     clearComposerDraftModelSelection(draftKey, sentId);
 
-    // Dropping the receipt would let the same share import a second time.
-    expect(getComposerDraftSnapshot(draftKey)).toEqual({
+    const receipt = {
       text: "",
       attachments: [],
       importedShareIds: ["share-1"],
-    });
+    };
+    expect(getComposerDraftSnapshot(draftKey)).toEqual(receipt);
+    await flushComposerDrafts();
+    appAtomRegistry.set(composerDraftsAtom, {});
+    resetComposerDraftsLoadState();
+    await waitForComposerDraftsLoaded();
+    expect(getComposerDraftSnapshot(draftKey)).toEqual(receipt);
+    await mergeComposerDraftContent(draftKey, share);
+    expect(getComposerDraftSnapshot(draftKey)).toEqual(receipt);
   });
 
   it("gives every model pick its own id and releases only the pick a message sent", () => {

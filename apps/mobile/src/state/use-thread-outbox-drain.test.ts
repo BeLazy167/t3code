@@ -219,6 +219,44 @@ describe("thread outbox model choice recovery", () => {
   const modelA = { instanceId: ProviderInstanceId.make("codex"), model: "ModelA" };
   const modelB = { ...modelA, model: "ModelB" };
 
+  it("persists a retained share receipt through archived delivery and sign-in restore", async () => {
+    await composerDrafts.waitForComposerDraftsLoaded();
+    const share = { text: "Shared text", attachments: [], sourceShareId: "share-1" };
+    await composerDrafts.mergeComposerDraftContent(draftKey, share);
+    composerDrafts.updateComposerDraftSettings(draftKey, { modelSelection: modelA });
+    const message = {
+      ...queuedMessage({ messageId: "archived-share-receipt", text: share.text }),
+      modelSelection: modelA,
+      modelSelectionId: composerDrafts.getComposerDraftSnapshot(draftKey).modelSelectionId,
+    };
+    await harness.manager.enqueue(message);
+    composerDrafts.setComposerDraftText(draftKey, "");
+    await composerDrafts.archiveCloudComposerDrafts("account-a", new Set([message.environmentId]));
+    await expect(
+      completeQueuedMessageDelivery(message, harness.manager.revisionOf(message.messageId)),
+    ).resolves.toBe("removed");
+
+    const reloadDrafts = async () => {
+      appAtomRegistry.set(composerDrafts.composerDraftsAtom, {});
+      appAtomRegistry.set(composerDrafts.composerCloudDraftsAtom, {
+        accountId: null,
+        signedOut: {},
+      });
+      composerDrafts.resetComposerDraftsLoadState();
+      await composerDrafts.waitForComposerDraftsLoaded();
+    };
+    await reloadDrafts();
+    await composerDrafts.restoreCloudComposerDrafts("account-a");
+    expect(remainingMessages()).toEqual([]);
+    const receipt = { text: "", attachments: [], importedShareIds: ["share-1"] };
+    expect(composerDrafts.getComposerDraftSnapshot(draftKey)).toEqual(receipt);
+
+    await reloadDrafts();
+    expect(composerDrafts.getComposerDraftSnapshot(draftKey)).toEqual(receipt);
+    await composerDrafts.mergeComposerDraftContent(draftKey, share);
+    expect(composerDrafts.getComposerDraftSnapshot(draftKey)).toEqual(receipt);
+  });
+
   it.each(["unchanged", "different model", "same model"] as const)(
     "releases only the delivered archived choice: %s",
     async (choice) => {
