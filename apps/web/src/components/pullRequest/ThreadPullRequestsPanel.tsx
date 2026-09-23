@@ -161,7 +161,16 @@ function LinkRow({
                 />
               ) : null}
               {snapshot !== null ? (
-                <PullRequestRowBranches head={snapshot.headBranch} base={snapshot.baseBranch} />
+                <>
+                  {/* Owner dropped for room; a thread's pull requests often span repositories. */}
+                  <span
+                    title={`${link.host}/${link.repository}`}
+                    className="max-w-32 shrink-0 truncate"
+                  >
+                    {link.repository.split("/").pop()}
+                  </span>
+                  <PullRequestRowBranches head={snapshot.headBranch} base={snapshot.baseBranch} />
+                </>
               ) : (
                 <span className="truncate font-mono">
                   {link.host}/{link.repository}
