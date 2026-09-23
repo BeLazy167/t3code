@@ -163,12 +163,14 @@ function LinkRow({
               {snapshot !== null ? (
                 <>
                   {/* Owner dropped for room; a thread's pull requests often span repositories. */}
-                  <span
-                    title={`${link.host}/${link.repository}`}
-                    className="max-w-32 shrink-0 truncate"
-                  >
-                    {link.repository.split("/").pop()}
-                  </span>
+                  <Tooltip>
+                    <TooltipTrigger render={<span className="max-w-32 shrink-0 truncate" />}>
+                      {link.repository.split("/").pop()}
+                    </TooltipTrigger>
+                    <TooltipPopup>
+                      {link.host}/{link.repository}
+                    </TooltipPopup>
+                  </Tooltip>
                   <PullRequestRowBranches head={snapshot.headBranch} base={snapshot.baseBranch} />
                 </>
               ) : (
